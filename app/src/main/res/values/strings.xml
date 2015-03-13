@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">TempClient</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="temp_name">温度：</string>
+    <string name="temp_num">00.0</string>
+    <string name="temp_unit">℃</string>
+    <string name="on">开</string>
+    <string name="off">关</string>
+</resources>
