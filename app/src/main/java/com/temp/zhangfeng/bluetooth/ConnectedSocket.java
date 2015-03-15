@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.nio.Buffer;
 
 public class ConnectedSocket extends Thread{
     private final BluetoothSocket mmSocket;
@@ -52,10 +53,10 @@ public class ConnectedSocket extends Thread{
 //    			bytes = mmInStream.read(buffer);
 //    			String str = Byte.toString(buffer[0]);
                 if((bytes=br.read(buffer))!=-1){
-                    strBuffer=new String(buffer);
+                   // strBuffer=new String(buffer);
                     Message msg = new Message();
                     msg.what = 1;
-                    msg.obj = strBuffer.toString().trim();
+                    msg.obj = getTemp(bytes,buffer).trim();
 //    				Log.i("BLUE", strBuffer.toString().trim());
                     mHandler.sendMessage(msg);
                 }
@@ -65,6 +66,40 @@ public class ConnectedSocket extends Thread{
             }
         }
     }
+
+    /**
+     * get temperature
+     * @return
+     */
+    private String getTemp(int bytes,char[] buffer) {
+        boolean flag_1 = true;
+        boolean flag_4 = true;
+        for(int i=0; i<bytes; i++){
+            switch(i){
+                case 0: if(buffer[i]!=0x24){flag_1=false;}break;
+                case 4: if(buffer[i]!=0x5E){flag_4=false;}break;
+                default:break;
+            }
+        }
+        if(!(flag_1||flag_4)){
+            char[] b = new char[6];
+            for(int i=0; i<b.length; i++){
+                if(i==3){
+                    b[i] = '.';
+                }else if (i==4){
+                    b[i] = buffer[i-1];
+                }else{
+                    b[i] = buffer[i];
+                }
+
+            }
+            String temp = new String(b);
+            temp = temp.substring(1,bytes);//截取有效数据 interception the effective data
+            return temp;
+        }
+        return "$";
+    }
+
     /* Call this from the main activity to send data to the remote device */
     public void write(byte[] bytes) {
         try {
