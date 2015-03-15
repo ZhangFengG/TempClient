@@ -8,7 +8,9 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
+import android.widget.CompoundButton;
 import android.widget.SeekBar;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import java.text.DecimalFormat;
@@ -23,6 +25,7 @@ public class MainActivity extends ActionBarActivity {
     private static final int CALLBACK_BR = 2;
     private static TextView tempNum;//温度文本
     private TextView targetTemp;//目标温度
+    private Switch sw;
     public SeekBar sb;
     public BluetoothAdapter bluetoothAdapter; //蓝牙适配器
     public ConnectThread ct;//连接线程-客户端
@@ -59,6 +62,42 @@ public class MainActivity extends ActionBarActivity {
         tempNum = (TextView)findViewById(R.id.textView2);//获取温度的文本框
         targetTemp = (TextView)findViewById(R.id.textView4);//获取目标温度
 
+         /*蓝牙*/
+        //获取蓝牙适配器
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        BluetoothDevice device = bluetoothAdapter.getRemoteDevice(CAR_ADR);
+        //判断是否支持
+        if(bluetoothAdapter!=null){
+            //判断是否打开
+            if(bluetoothAdapter.isEnabled()){
+                //显示已配对信息
+//        		findBluetooth();
+        		/*客户端连接*/
+                ct = new ConnectThread(mHandler,bluetoothAdapter, device);
+                ct.start();
+            }else{
+                //调用intent打开
+                Intent enableBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                startActivityForResult(enableBluetooth,REQUEST_ENABLE_BT);
+            }
+        }
+
+        /*开关*/
+        sw = (Switch)findViewById(R.id.switch1);
+        sw.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                byte[] b = new byte[1];
+                if(isChecked){
+                    b[0]= (byte) 0x81;
+                    //Log.i("SW",Byte.toString(b[0]));
+                    ct.write(b);
+                }else{
+                    b[0]=(byte)0x80;
+                    ct.write(b);
+                }
+            }
+        });
         /*拖动条*/
         sb = (SeekBar)findViewById(R.id.seekBar);
         sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -79,45 +118,9 @@ public class MainActivity extends ActionBarActivity {
                 byte[] b = new byte[1];
                 b[0] = getTempToByte(seekBar.getProgress());
                 ct.write(b);
-//                float f = new Float(numStr);
-//                int num = (int)(f*10);
-//                char[] numC = new char[]{'^','1','2','3','$'};
-               // numC = Integer.toString((num)).toCharArray();
-                //多数据发送
-//                char[] numCT = new char[1];
-//                for(int i=0; i<numC.length; i++){
-//                    numCT[0] = numC[i];
-//                    ct.write(numCT);
-//                    try {
-//                        Thread.sleep(300);
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-
-               // numCT[0] = numC[0];
-                //ct.write(numC);
             }
         });
-        /*蓝牙*/
-        //获取蓝牙适配器
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        BluetoothDevice device = bluetoothAdapter.getRemoteDevice(CAR_ADR);
-        //判断是否支持
-        if(bluetoothAdapter!=null){
-            //判断是否打开
-            if(bluetoothAdapter.isEnabled()){
-                //显示已配对信息
-//        		findBluetooth();
-        		/*客户端连接*/
-                ct = new ConnectThread(mHandler,bluetoothAdapter, device);
-                ct.start();
-            }else{
-                //调用intent打开
-                Intent enableBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                startActivityForResult(enableBluetooth,REQUEST_ENABLE_BT);
-            }
-        }
+
 
     }
 
