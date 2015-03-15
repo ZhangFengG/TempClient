@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
@@ -18,6 +19,7 @@ import com.temp.zhangfeng.bluetooth.ConnectThread;
 public class MainActivity extends ActionBarActivity {
     private static final String CAR_ADR = "00:14:03:05:08:CD";
     private static final int REQUEST_ENABLE_BT = 1;
+    private static final int TEMPERATURE_NUM = 1;
     private static final int CALLBACK_BR = 2;
     private static TextView tempNum;//温度文本
     private TextView targetTemp;//目标温度
@@ -30,13 +32,16 @@ public class MainActivity extends ActionBarActivity {
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
-//			Log.i("BLUE", "It is OK");
-//			etx.setText("It is OK");
             switch (msg.what) {
-                case 1:
-                    tempNum.setText(null);
+                case TEMPERATURE_NUM:
+
+                    //tempNum.setText(null);
                     String str = (String) msg.obj;
-                    tempNum.setText(str.trim());
+                    if(str.equals("$")){
+                       return ;
+                    }
+                    tempNum.setText(str);
+//                    Log.i("BLUE", str);
                     break;
                 case CALLBACK_BR:
                     break;
@@ -59,7 +64,7 @@ public class MainActivity extends ActionBarActivity {
         sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                targetTemp.setText(getTargetTemp(progress));
+                targetTemp.setText(getTargetTempToString(progress));
 
             }
 
@@ -70,7 +75,28 @@ public class MainActivity extends ActionBarActivity {
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
+                String numStr = getTargetTempToString(seekBar.getProgress());
+                byte[] b = new byte[1];
+                b[0] = getTempToByte(seekBar.getProgress());
+                ct.write(b);
+//                float f = new Float(numStr);
+//                int num = (int)(f*10);
+//                char[] numC = new char[]{'^','1','2','3','$'};
+               // numC = Integer.toString((num)).toCharArray();
+                //多数据发送
+//                char[] numCT = new char[1];
+//                for(int i=0; i<numC.length; i++){
+//                    numCT[0] = numC[i];
+//                    ct.write(numCT);
+//                    try {
+//                        Thread.sleep(300);
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
 
+               // numCT[0] = numC[0];
+                //ct.write(numC);
             }
         });
         /*蓝牙*/
@@ -96,11 +122,23 @@ public class MainActivity extends ActionBarActivity {
     }
 
     /**
+     * 获取一位数据发送到单片机
+     * @param progress
+     * @return
+     */
+    private byte getTempToByte(int progress){
+        byte b;
+        //b = (byte) ((byte) ((progress / 16) << 4) | (byte) (progress % 16));
+        b = (byte)(0x00|((progress/16)<<4));
+        b = (byte)(b|(progress%16));
+        return b;
+    }
+    /**
      *
      * @param progress
      * @return
      */
-    private String getTargetTemp(int progress) {
+    private String getTargetTempToString(int progress) {
         final int MaxTemp = 50;//最大值
         final int MaxProgress = 100;
         float f = (float)MaxTemp*progress/MaxProgress;//获取当前值
